@@ -1,18 +1,18 @@
-const mysql = require("mysql2");
+const { Client } = require("pg");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
-const connection = mysql.createConnection({
+const client = new Client({
   host: "localhost",
-  port: 3306,
-  user: "root",
-  password: "password123",
+  port: 5432,
+  user: "your_postgres_user",
+  password: "your_postgres_password",
   database: "company_db",
 });
 
-connection.connect((err) => {
+client.connect((err) => {
   if (err) throw err;
-  console.log("WELCOME TO PAWNEE CITY HALL EMPLOYEE TRACKER");
+  console.log("WELCOME TO ANERI CORPORATION EMPLOYEE TRACKER");
   startMenu();
 });
 
@@ -57,36 +57,39 @@ const startMenu = () => {
           updateEmployee();
           break;
         case "Exit":
-          connection.end();
+          client.end();
           break;
         default:
-          connection.end();
+          client.end();
       }
     });
 };
 
 const viewDepartment = () => {
-  connection.query("SELECT * FROM department", function (err, res) {
+  client.query("SELECT * FROM department", (err, res) => {
     if (err) throw err;
-    console.table(res);
+    console.table(res.rows);
     startMenu();
   });
 };
 
 const viewJobs = () => {
-  connection.query("SELECT * FROM job", function (err, res) {
+  client.query("SELECT * FROM job", (err, res) => {
     if (err) throw err;
-    console.table(res);
+    console.table(res.rows);
     startMenu();
   });
 };
 
 const viewEmployees = () => {
-  connection.query(
-    "SELECT employee.id, first_name, last_name, title, salary, dept_name, manager_id FROM ((department JOIN job ON department.id = job.department_id) JOIN employee ON job.id = employee.job_id);",
-    function (err, res) {
+  client.query(
+    `SELECT employee.id, first_name, last_name, title, salary, dept_name, manager_id
+     FROM ((department
+     JOIN job ON department.id = job.department_id)
+     JOIN employee ON job.id = employee.job_id);`,
+    (err, res) => {
       if (err) throw err;
-      console.table(res);
+      console.table(res.rows);
       startMenu();
     }
   );
@@ -102,10 +105,10 @@ const addDepartment = () => {
       },
     ])
     .then((answer) => {
-      connection.query(
-        "INSERT INTO department (dept_name) VALUES (?)",
+      client.query(
+        "INSERT INTO department (dept_name) VALUES ($1)",
         [answer.department],
-        function (err, res) {
+        (err, res) => {
           if (err) throw err;
           console.log("Department added!");
           startMenu();
@@ -134,10 +137,10 @@ const addJob = () => {
       },
     ])
     .then((answer) => {
-      connection.query(
-        "INSERT INTO job (title, salary, department_id) VALUES (?, ?, ?)",
+      client.query(
+        "INSERT INTO job (title, salary, department_id) VALUES ($1, $2, $3)",
         [answer.jobTitle, answer.salary, answer.deptId],
-        function (err, res) {
+        (err, res) => {
           if (err) throw err;
           console.log("Job added!");
           startMenu();
@@ -171,10 +174,10 @@ const addEmployee = () => {
       },
     ])
     .then((answer) => {
-      connection.query(
-        "INSERT INTO employee (first_name, last_name, job_id, manager_id) VALUES (?, ?, ?, ?)",
+      client.query(
+        "INSERT INTO employee (first_name, last_name, job_id, manager_id) VALUES ($1, $2, $3, $4)",
         [answer.nameFirst, answer.nameLast, answer.jobId, answer.managerId],
-        function (err, res) {
+        (err, res) => {
           if (err) throw err;
           console.log("Employee added!");
           startMenu();
@@ -198,10 +201,10 @@ const updateEmployee = () => {
       },
     ])
     .then((answer) => {
-      connection.query(
-        "UPDATE employee SET job_id=? WHERE id=?",
+      client.query(
+        "UPDATE employee SET job_id=$1 WHERE id=$2",
         [answer.jobId, answer.id],
-        function (err, res) {
+        (err, res) => {
           if (err) throw err;
           console.log("Employee updated!");
           startMenu();
