@@ -1,12 +1,11 @@
 const { Client } = require("pg");
 const inquirer = require("inquirer");
-const cTable = require("console.table");
 
 const client = new Client({
   host: "localhost",
   port: 5432,
-  user: "your_postgres_user",
-  password: "your_postgres_password",
+  user: "postgres",
+  password: "Tanaya04",
   database: "company_db",
 });
 
